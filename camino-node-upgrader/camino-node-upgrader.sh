@@ -7,13 +7,21 @@
 #
 # Prerequisites for this script:
 #  - jq command installed
+# 
+# Usage:
+# camino-node-upgrader.sh -u <username> # where <username> is the user that installed camino-node
+#
+# Example crontab entry:
+# 0 23 * * *       root    /root/camino-node-upgrader.sh -u <username> >> /var/log/camino-node-upgrader.log 2>&1 
+
 
 unset -v CAMINO_NODE_USERNAME
 while getopts 'u:h' opt; do
   case "$opt" in
     u)
       CAMINO_NODE_USERNAME="$OPTARG"
-      echo "Starting upgrade process for user: $CAMINO_NODE_USERNAME"
+      echo "*** Starting upgrade process for user: $CAMINO_NODE_USERNAME ***"
+      echo "*** Date is: `date` ***"
       ;;
    
     ?|h)
@@ -124,17 +132,12 @@ fi
 # version is lower then the installed one
 if [ "$LATEST_VERSION" != "$CURRENT_VERSION" ]
 then
-    # Get the this scripts path
-    export SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )"; cd .. && pwd )
-
-    # Change directory
-    cd $SCRIPT_PATH
-
     # Start the upgrade
     echo "Current Node version ($CURRENT_VERSION) is NOT the latest ($LATEST_VERSION)"
     echo "Upgrading camino-node..."
-    echo "Stopping service..."
+    echo -n "Stopping service..."
     systemctl stop camino-node
+    echo "done @`date`"
 
     # Download and copy node files
     mkdir -p /tmp/camino-node-install               #make a directory to work in
@@ -149,8 +152,9 @@ then
         echo "Node version found."
     else
         echo "Unable to find camino-node version $version. Exiting."
-        echo "Restarting service..."
+        echo -n "Restarting service..."
         systemctl start camino-node
+        echo "done @`date`"
       exit
     fi
 
@@ -162,8 +166,9 @@ then
     rm camino-node-linux-*.tar.gz
     runuser -l $CAMINO_NODE_USERNAME -c 'echo "Node files unpacked into $HOME/camino-node"'
 
-    echo "Node upgraded, starting service..."
+    echo -n "Node upgraded, starting service..."
     systemctl start camino-node
+    echo "done @`date`"
     echo "New node version:"
     runuser -l $CAMINO_NODE_USERNAME -c '$HOME/camino-node/camino-node --version'
     echo "Done!"
