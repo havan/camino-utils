@@ -295,3 +295,4 @@ cython_debug/
 evm/allAddresses.txt
 evm/allFromAddresses.txt
 evm/positiveBalanceAddresses.txt
+evm/positiveBalanceFromAddresses.txt

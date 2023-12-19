@@ -5,6 +5,7 @@ const fs = require('fs');
 const web3 = new Web3("https://api.camino.network/ext/bc/C/rpc");
 
 let blockNum = 0;
+
 const CONCURRENCY_LIMIT = 30; // Adjust this to your preference
 
 let addresses = {};
@@ -54,6 +55,7 @@ const processBlock = async (blockNumber) => {
 
 let run = async () => {
   let positiveAddresses = [];
+  let positiveFromAddresses = [];
 
   try {
     // Fetch block number for latest block
@@ -88,7 +90,17 @@ let run = async () => {
       }
     }
 
-    // console.log()
+    for (let fromAddress in fromAddresses) {
+      if (fromAddress) {
+        let balance = await web3.eth.getBalance(fromAddress);
+        if (parseInt(balance) > 0) {
+          //console.log('Positive balanced address found:', address);
+          positiveFromAddresses.push(fromAddress);
+        }
+      }
+    }
+
+    console.log()
     // console.log("------------------------- POSITIVE BALANCE ADDRESSES -------------------------")
     // console.log(positiveAddresses)
 
@@ -103,6 +115,10 @@ let run = async () => {
     // Write positive balance addresses to a different file
     fs.writeFileSync('positiveBalanceAddresses.txt', positiveAddresses.join('\n'));
     console.log('Positive balance addresses have been saved to positiveBalanceAddresses.txt');
+
+    // Write positive balance fromAddresses to a different file
+    fs.writeFileSync('positiveBalanceFromAddresses.txt', positiveAddresses.join('\n'));
+    console.log('Positive balance fromAddresses have been saved to positiveBalanceFromAddresses.txt');
 
     console.log(`Last block number: ${blk_number}`)
   } catch (err) {
