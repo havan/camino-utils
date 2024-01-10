@@ -296,3 +296,8 @@ evm/allAddresses.txt
 evm/allFromAddresses.txt
 evm/positiveBalanceAddresses.txt
 evm/positiveBalanceFromAddresses.txt
+
+# Distribute CAM
+config.yaml
+airdrop.txt
+
