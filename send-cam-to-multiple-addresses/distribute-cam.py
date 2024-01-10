@@ -33,6 +33,11 @@ import json
 import yaml
 import click
 from web3 import Web3
+from datetime import datetime
+
+now = datetime.now()
+timestamp = datetime.timestamp(now)
+txn_log_file = open(f'txn_log_file.{timestamp}.log', 'w')
 
 def read_config():
     # Load the configuration file
@@ -82,10 +87,15 @@ def distribute(network, account, addresses_file):
     account_checksum_address = Web3.to_checksum_address(account_address)
     click.echo(click.style(f'Account checksum address: ') + click.style(f'{account_checksum_address}', fg='bright_magenta'))
 
+    click.echo(f'Logging to file {txn_log_file.name}')
+
     # Check if we have enough balance
     check_balance(account_checksum_address, transfer_list, w3)
+    # Log to txn log file
+    check_balance(account_checksum_address, transfer_list, w3, file=txn_log_file)
 
     click.echo(click.style(f'Starting sending {transfer_list.__len__()} transactions...'))
+    click.echo(click.style(f'Starting sending {transfer_list.__len__()} transactions...'), file=txn_log_file)
 
     for address, amount in transfer_list:
         # Convert amount to Wei
@@ -111,15 +121,14 @@ def distribute(network, account, addresses_file):
         # Wait for transaction receipt
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
-        print_transfer(address, amount, tx_hash)
+        print_transfer(address, amount, tx_hash, receipt)
+        # Write to log file
+        print_transfer(address, amount, tx_hash, receipt, file=txn_log_file)
 
-        if receipt.status == 1:
-            click.echo(click.style(f"SUCCESS", fg='bright_green', bold=True))
-        else:
-            click.echo(click.style(f"FAIL", fg='bright_red', bold=True))
+    click.echo('Finished.')
 
 
-def check_balance(account_address, transfer_list, w3):
+def check_balance(account_address, transfer_list, w3, file=None):
     # Check for sufficient balance
     
     txn_fee = w3.to_wei(0.006, 'ether')
@@ -150,22 +159,29 @@ def check_balance(account_address, transfer_list, w3):
         f' Grand Total: ' +
         click.style(f'{grand_total_eth} CAM', fg='bright_cyan') +
         f' Difference: ' +
-        click.style(f'{msign}{missing_eth} CAM', fg='bright_red')
+        click.style(f'{msign}{missing_eth} CAM', fg='bright_red'),
+        file=file
     )
 
     if balance < grand_total:
-        click.secho('ERROR: Insufficient balance to complete all transactions. Aborting!', fg='bright_red', blink=True, bold=True)
+        click.echo(click.click('ERROR: Insufficient balance to complete all transactions. Aborting!', fg='bright_red', blink=True, bold=True), file=file)
         sys.exit(3)
 
 
-def print_transfer(address, amount, tx_hash):
+def print_transfer(address, amount, tx_hash, receipt, file=None):
     
     click.echo(
         click.style(f'{address} ', fg='bright_cyan') +
         click.style(f'{amount} ', fg='bright_red') +
         click.style(f'{tx_hash.hex()} ', fg='bright_yellow'),
-        nl=False
+        nl=False,
+        file=file,
     )
+
+    if receipt.status == 1:
+        click.echo(click.style(f"SUCCESS", fg='bright_green', bold=True), file=file)
+    else:
+        click.echo(click.style(f"FAIL", fg='bright_red', bold=True), file=file)
 
 
 def get_transfers_list(addresses_file):
@@ -183,7 +199,7 @@ def get_transfers_list(addresses_file):
     
     return transfer_list
 
-def print_network(network):
+def print_network(network, file=None):
     rpc_url = network['rpc_url']
     network_id = network['id']
     network_name = network['name']
@@ -194,16 +210,18 @@ def print_network(network):
         click.style(f' with ID ') +
         click.style(f'{network_id}', fg='bright_cyan') +
         click.style(f' and RPC URL ') +
-        click.style(f'{rpc_url}', fg='bright_green')
+        click.style(f'{rpc_url}', fg='bright_green'),
+        file=file
     )
 
 
-def print_account(account):
+def print_account(account, file=None):
     address = account['address']
     pkey = account['pkey']
     click.echo(
         click.style('Using account ') +
-        click.style(f'{address}', fg='bright_red')
+        click.style(f'{address}', fg='bright_red'),
+        file=file
     )
 
 
@@ -211,6 +229,7 @@ def get_network(network, config):
     try:
         network = config['networks'][network]
         print_network(network)
+        print_network(network, file=txn_log_file)
     except KeyError as ex:
         click.echo(f'Network "{network}" not found in config file', err=True)
         sys.exit(1)
@@ -222,6 +241,7 @@ def get_account(account, config):
         account_name = account
         account_dict = config['accounts'][account]
         print_account(account_dict)
+        print_account(account_dict, file=txn_log_file)
     except KeyError as ex:
         click.echo(f'Account "{account}" not found in config file', err=True)
         sys.exit(1)
