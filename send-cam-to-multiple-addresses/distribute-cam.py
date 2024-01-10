@@ -92,7 +92,18 @@ def distribute(network, account, addresses_file):
     # Check if we have enough balance
     check_balance(account_checksum_address, transfer_list, w3)
     # Log to txn log file
-    check_balance(account_checksum_address, transfer_list, w3, file=txn_log_file)
+    grand_total_eth = check_balance(account_checksum_address, transfer_list, w3, file=txn_log_file)
+
+    click.echo(
+        f'This will create ' +
+        click.style(f'{transfer_list.__len__()} transactions ', fg='bright_red') +
+        f'and consume ' +
+        click.style(f'{grand_total_eth} CAM ', fg='bright_red')
+    )
+    
+    if not click.confirm(f'Do you want to continue?'):
+        click.echo('Aborted!')
+        sys.exit(99)
 
     click.echo(click.style(f'Starting sending {transfer_list.__len__()} transactions...'))
     click.echo(click.style(f'Starting sending {transfer_list.__len__()} transactions...'), file=txn_log_file)
@@ -166,6 +177,8 @@ def check_balance(account_address, transfer_list, w3, file=None):
     if balance < grand_total:
         click.echo(click.style('ERROR: Insufficient balance to complete all transactions. Aborting!', fg='bright_red', blink=True, bold=True), file=file)
         sys.exit(3)
+
+    return grand_total_eth
 
 
 def print_transfer(address, amount, tx_hash, receipt, file=None):
