@@ -164,7 +164,7 @@ def check_balance(account_address, transfer_list, w3, file=None):
     )
 
     if balance < grand_total:
-        click.echo(click.click('ERROR: Insufficient balance to complete all transactions. Aborting!', fg='bright_red', blink=True, bold=True), file=file)
+        click.echo(click.style('ERROR: Insufficient balance to complete all transactions. Aborting!', fg='bright_red', blink=True, bold=True), file=file)
         sys.exit(3)
 
 

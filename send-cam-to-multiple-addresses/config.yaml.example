@@ -1,0 +1,16 @@
+# EXAMPLE CONFIG FILE
+# Edit address and pkey entries and rename to config.yaml
+networks:
+  columbus:
+    rpc_url: https://columbus.camino.network/ext/bc/C/rpc
+    name: columbus
+    id: 501
+  camino:
+    rpc_url: https://api.camino.network/ext/bc/C/rpc
+    name: camino
+    id: 500
+
+accounts:
+  airdrop:
+    address: "0xC_CHAIN_ADDRESS"
+    pkey: "C_CHAIN_PRIVATE_KEY"
