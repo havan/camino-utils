@@ -14,3 +14,6 @@ accounts:
   airdrop:
     address: "0xC_CHAIN_ADDRESS"
     pkey: "C_CHAIN_PRIVATE_KEY"
+
+gas_price: 200 # nCAM (GWEI)
+

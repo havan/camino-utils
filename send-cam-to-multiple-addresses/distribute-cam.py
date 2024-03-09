@@ -39,6 +39,9 @@ now = datetime.now()
 timestamp = datetime.timestamp(now)
 txn_log_file = open(f'txn_log_file.{timestamp}.log', 'w')
 
+GAS_PRICE = None
+GAS_LIMIT = 21000
+
 def read_config():
     # Load the configuration file
     config_file='config.yaml'
@@ -49,6 +52,12 @@ def read_config():
         click.secho(f'Config file {config_file} file not found.', err=True)
         sys.exit(1)
     return config
+
+
+def set_gas_price(config):
+    global GAS_PRICE
+    gas_price_gwei = config.get('gas_price', 200)
+    GAS_PRICE = gas_price_gwei #* 10^9
 
 
 @click.group()
@@ -67,6 +76,8 @@ def distribute(network, account, addresses_file):
     config = read_config()
     network = get_network(network, config)
     account = get_account(account, config)
+
+    set_gas_price(config)
 
     rpc_url = network['rpc_url']
     network_id = network['id']
@@ -118,14 +129,20 @@ def distribute(network, account, addresses_file):
             'nonce': w3.eth.get_transaction_count(account_checksum_address),
             'to': address,
             'value': amount_in_wei,
-            'gas': 2000000,
-            'gasPrice': w3.to_wei('200', 'gwei'),
+            'gas': 25000,
+            #'gasPrice': w3.to_wei(GAS_PRICE, 'gwei'),
+            'maxFeePerGas': w3.to_wei(GAS_PRICE, 'gwei'),
+            'maxPriorityFeePerGas': w3.to_wei(0, 'gwei'),
             'chainId': network_id,
         }
+
+        print("BEFORE SIGNING")
 
         # Sign transaction
         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
         
+        print("BEFORE SENDING")
+
         # Send transaction
         tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
 
@@ -142,7 +159,7 @@ def distribute(network, account, addresses_file):
 def check_balance(account_address, transfer_list, w3, file=None):
     # Check for sufficient balance
     
-    txn_fee = w3.to_wei(0.006, 'ether')
+    txn_fee = w3.to_wei(GAS_PRICE, 'gwei') * GAS_LIMIT
     total_tx_fee = sum(txn_fee for _,_ in transfer_list)
     total_tx_fee_eth = w3.from_wei(total_tx_fee, 'ether')
     
