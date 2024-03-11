@@ -136,13 +136,9 @@ def distribute(network, account, addresses_file):
             'chainId': network_id,
         }
 
-        print("BEFORE SIGNING")
-
         # Sign transaction
         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
         
-        print("BEFORE SENDING")
-
         # Send transaction
         tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
 
