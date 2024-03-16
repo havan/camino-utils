@@ -1,0 +1,14 @@
+asn1crypto==1.5.1
+cffi==1.16.0
+coincurve==18.0.0
+cryptography==42.0.5
+cytoolz==0.12.3
+eciespy==0.4.1
+eth-hash==0.7.0
+eth-keys==0.4.0
+eth-typing==3.5.2
+eth-utils==2.3.1
+pycparser==2.21
+pycryptodome==3.20.0
+toolz==0.12.1
+typing_extensions==4.10.0
