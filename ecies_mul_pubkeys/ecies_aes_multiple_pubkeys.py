@@ -84,6 +84,8 @@ def main():
     public EC key (ECIES). This approach is efficient and secure for sending encrypted data to multiple recipients.
     """
 
+    print("Data: \n", data.decode("utf-8"), "\n")
+
     num_recipients = 3
     
     private_keys, public_keys = generate_keys(num_recipients)
