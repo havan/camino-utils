@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "p-queue": "^8.0.1",
     "web3": "^4.3.0"
   }
 }
