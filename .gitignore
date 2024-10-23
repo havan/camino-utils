@@ -299,5 +299,5 @@ evm/positiveBalanceFromAddresses.txt
 
 # Distribute CAM
 config.yaml
-airdrop.txt
+*.airdrop.txt
 
