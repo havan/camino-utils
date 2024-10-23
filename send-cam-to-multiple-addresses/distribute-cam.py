@@ -57,7 +57,7 @@ def read_config():
 def set_gas_price(config):
     global GAS_PRICE
     gas_price_gwei = config.get('gas_price', 200)
-    GAS_PRICE = gas_price_gwei #* 10^9
+    GAS_PRICE = gas_price_gwei
 
 
 @click.group()
@@ -69,7 +69,7 @@ def cli():
 @cli.command()
 @click.option('--network', metavar='NETWORK', default='columbus', help='Network name in the config file. Default: columbus')
 @click.option('--account', metavar='ACCOUNT', required=True, help='Account to use for distribution.')
-@click.option('--addresses-file', metavar='ADDR_FILE', required=True, help='Addresses file with addresses and amounts, seperated by space.')
+@click.option('--addresses-file', metavar='ADDR_FILE', required=True, help='Addresses file with addresses and amounts, separated by space.')
 def distribute(network, account, addresses_file):
     """Distribute CAM tokens"""
     
@@ -96,7 +96,7 @@ def distribute(network, account, addresses_file):
 
     # Convert the address to a checksum address
     account_checksum_address = Web3.to_checksum_address(account_address)
-    click.echo(click.style(f'Account checksum address: ') + click.style(f'{account_checksum_address}', fg='bright_magenta'))
+    click.echo(click.style(f'Account checksum address: ', fg='bright_magenta') + click.style(f'{account_checksum_address}', fg='bright_magenta'))
 
     click.echo(f'Logging to file {txn_log_file.name}')
 
@@ -128,6 +128,9 @@ def distribute(network, account, addresses_file):
     # Initialize transaction counter
     tx_counter = 0
 
+    # Store the start time
+    start_time = datetime.now()
+
     for address, amount in transfer_list:
         # Convert amount to Wei
         amount_in_wei = w3.to_wei(amount, 'ether')
@@ -155,26 +158,44 @@ def distribute(network, account, addresses_file):
         nonce += 1
         tx_counter += 1
 
-        # Print status message
-        click.echo(f'Sent transaction {tx_counter}/{len(transfer_list)}: to {address}, amount {amount} CAM')
-        click.echo(f'Sent transaction {tx_counter}/{len(transfer_list)}: to {address}, amount {amount} CAM', file=txn_log_file)
-    
+        # Print status message with color
+        click.echo(
+            click.style(f'Sent transaction ', fg='bright_white') +
+            click.style(f'{tx_counter}', fg='bright_green') +
+            click.style(f'/{len(transfer_list)}: ', fg='green') +
+            click.style(f'to {address}, ', fg='bright_cyan') +
+            click.style(f'amount {amount} CAM', fg='bright_yellow')
+        )
+        click.echo(
+            f'Sent transaction {tx_counter}/{len(transfer_list)}: to {address}, amount {amount} CAM',
+            file=txn_log_file
+        )
+
     # Optionally, wait for transaction receipts after sending all transactions
     click.echo('Waiting for transaction receipts...')
+    click.echo('Waiting for transaction receipts...', file=txn_log_file)
     for address, amount, tx_hash in tx_hashes:
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
         print_transfer(address, amount, tx_hash, receipt)
         # Write to log file
         print_transfer(address, amount, tx_hash, receipt, file=txn_log_file)
+    
+    # Calculate elapsed time
+    end_time = datetime.now()
+    elapsed_time = end_time - start_time
+    elapsed_seconds = elapsed_time.total_seconds()
+    minutes, seconds = divmod(elapsed_seconds, 60)
 
     click.echo('Finished.')
+    click.echo(f'Total time taken: {int(minutes)} minutes {int(seconds)} seconds.')
+    click.echo(f'Total time taken: {int(minutes)} minutes {int(seconds)} seconds.', file=txn_log_file)
 
 
 def check_balance(account_address, transfer_list, w3, file=None):
     # Check for sufficient balance
     
     txn_fee = w3.to_wei(GAS_PRICE, 'gwei') * GAS_LIMIT
-    total_tx_fee = sum(txn_fee for _,_ in transfer_list)
+    total_tx_fee = txn_fee * len(transfer_list)
     total_tx_fee_eth = w3.from_wei(total_tx_fee, 'ether')
     
     total_amount = sum(w3.to_wei(float(amount), 'ether') for _, amount in transfer_list)
@@ -249,11 +270,11 @@ def print_network(network, file=None):
     network_name = network['name']
 
     click.echo(
-        click.style(f'Using network ') +
+        click.style(f'Using network ', fg='bright_white') +
         click.style(f'{network_name}', fg='bright_yellow') +
-        click.style(f' with ID ') +
+        click.style(f' with ID ', fg='bright_white') +
         click.style(f'{network_id}', fg='bright_cyan') +
-        click.style(f' and RPC URL ') +
+        click.style(f' and RPC URL ', fg='bright_white') +
         click.style(f'{rpc_url}', fg='bright_green'),
         file=file
     )
@@ -261,9 +282,9 @@ def print_network(network, file=None):
 
 def print_account(account, file=None):
     address = account['address']
-    pkey = account['pkey']
+    # pkey = account['pkey']  # Avoid printing private key
     click.echo(
-        click.style('Using account ') +
+        click.style('Using account ', fg='bright_white') +
         click.style(f'{address}', fg='bright_red'),
         file=file
     )
