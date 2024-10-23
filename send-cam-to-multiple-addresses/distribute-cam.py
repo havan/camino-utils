@@ -107,7 +107,7 @@ def distribute(network, account, addresses_file):
 
     click.echo(
         f'This will create ' +
-        click.style(f'{transfer_list.__len__()} transactions ', fg='bright_red') +
+        click.style(f'{len(transfer_list)} transactions ', fg='bright_red') +
         f'and consume ' +
         click.style(f'{grand_total_eth} CAM ', fg='bright_red')
     )
@@ -116,8 +116,17 @@ def distribute(network, account, addresses_file):
         click.echo('Aborted!')
         sys.exit(99)
 
-    click.echo(click.style(f'Starting sending {transfer_list.__len__()} transactions...'))
-    click.echo(click.style(f'Starting sending {transfer_list.__len__()} transactions...'), file=txn_log_file)
+    click.echo(click.style(f'Starting sending {len(transfer_list)} transactions...'))
+    click.echo(click.style(f'Starting sending {len(transfer_list)} transactions...'), file=txn_log_file)
+
+    # Get the starting nonce
+    nonce = w3.eth.get_transaction_count(account_checksum_address)
+
+    # Create a list to store transaction hashes
+    tx_hashes = []
+
+    # Initialize transaction counter
+    tx_counter = 0
 
     for address, amount in transfer_list:
         # Convert amount to Wei
@@ -126,11 +135,10 @@ def distribute(network, account, addresses_file):
         address = Web3.to_checksum_address(address)
 
         tx = {
-            'nonce': w3.eth.get_transaction_count(account_checksum_address),
+            'nonce': nonce,
             'to': address,
             'value': amount_in_wei,
             'gas': 25000,
-            #'gasPrice': w3.to_wei(GAS_PRICE, 'gwei'),
             'maxFeePerGas': w3.to_wei(GAS_PRICE, 'gwei'),
             'maxPriorityFeePerGas': w3.to_wei(0, 'gwei'),
             'chainId': network_id,
@@ -141,10 +149,20 @@ def distribute(network, account, addresses_file):
         
         # Send transaction
         tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hashes.append((address, amount, tx_hash))
 
-        # Wait for transaction receipt
+        # Increment the nonce and transaction counter
+        nonce += 1
+        tx_counter += 1
+
+        # Print status message
+        click.echo(f'Sent transaction {tx_counter}/{len(transfer_list)}: to {address}, amount {amount} CAM')
+        click.echo(f'Sent transaction {tx_counter}/{len(transfer_list)}: to {address}, amount {amount} CAM', file=txn_log_file)
+    
+    # Optionally, wait for transaction receipts after sending all transactions
+    click.echo('Waiting for transaction receipts...')
+    for address, amount, tx_hash in tx_hashes:
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-
         print_transfer(address, amount, tx_hash, receipt)
         # Write to log file
         print_transfer(address, amount, tx_hash, receipt, file=txn_log_file)
